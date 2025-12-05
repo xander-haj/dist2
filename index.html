@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="brand">Distill.Lab</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module">
+    import { initNavigation } from './nav.js';
+    import { initTheme } from './theme-toggle.js';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initTheme();
+    });
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <!-- New Fixed Top Bar -->
+  <div id="top-bar"></div>
+
+  <div class="app-container">
+    <nav class="sidebar">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <div class="nav-section-title" data-i18n="nav.curriculum">Curriculum</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="index.html" class="nav-link active" data-i18n="nav.intro">Introduction</a></li>
+        <li class="nav-item"><a href="what_is_distillation.html" class="nav-link" data-i18n="nav.what_is">What is Distillation?</a></li>
+        <li class="nav-item"><a href="core_concepts.html" class="nav-link" data-i18n="nav.concepts">Core Concepts</a></li>
+        <li class="nav-item"><a href="distillation_vs_compression.html" class="nav-link" data-i18n="nav.vs">Distillation vs Compression</a></li>
+        <li class="nav-item"><a href="choosing_model_sizes.html" class="nav-link" data-i18n="nav.sizes">Target Model Sizes</a></li>
+        <li class="nav-item"><a href="data_for_distillation.html" class="nav-link" data-i18n="nav.data">Data Engineering</a></li>
+        <li class="nav-item"><a href="pipelines.html" class="nav-link" data-i18n="nav.pipelines">Distillation Pipelines</a></li>
+        <li class="nav-item"><a href="evaluating_distilled_models.html" class="nav-link" data-i18n="nav.eval">Evaluation</a></li>
+        <li class="nav-item"><a href="practical_tradeoffs_case_studies.html" class="nav-link" data-i18n="nav.tradeoffs">Tradeoffs & Cases</a></li>
+        <li class="nav-item"><a href="glossary.html" class="nav-link" data-i18n="nav.glossary">Glossary</a></li>
+      </ul>
+      <button class="theme-toggle-btn desktop-theme-toggle" style="margin-top: auto;"><i data-lucide="moon"></i></button>
+    </nav>
+
+    <header class="header">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <button class="menu-toggle"><i data-lucide="menu"></i></button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <h1 id="s-title"><span data-i18n="home.title">Engineering Efficient LLMs through Model Distillation</span> <button class="tts-section-btn" data-target="s-title"><i data-lucide="volume-2"></i></button></h1>
+      <p class="lead" id="s-lead" data-i18n="home.lead">A comprehensive, zero-to-hero guide on training small, efficient language models that mimic the performance of frontier giants.</p>
+
+      <div class="card">
+        <h3 id="s-why"><span data-i18n="home.why_title">Why Distillation Matters</span> <button class="tts-section-btn" data-target="s-why-txt"><i data-lucide="volume-2"></i></button></h3>
+        <p id="s-why-txt" data-i18n="home.why_text">Running a 70B parameter model locally requires ~$15,000 in GPU hardware (2x A6000 or 4x 3090). Distillation allows you to compress that intelligence into a 7B or 13B model that runs on a single consumer GPU or even a high-end laptop, retaining 90-95% of the teacher's specific capabilities.</p>
+      </div>
+
+      <h2 data-i18n="home.path_title">Choose Your Learning Path</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <!-- Beginner Path -->
+        <div class="card" style="border-top: 4px solid var(--color-accent);">
+          <h3><i data-lucide="map"></i> <span data-i18n="home.beginner_title">Beginner Path</span></h3>
+          <p data-i18n="home.beginner_text">Start from first principles. Understand the "why" and "how" before touching code.</p>
+          <ol style="margin-top: 1rem; font-size: 0.95rem;">
+            <li><a href="what_is_distillation.html" data-i18n="nav.what_is">What is Model Distillation?</a></li>
+            <li><a href="core_concepts.html" data-i18n="nav.concepts">Core Concepts (Logits & Loss)</a></li>
+            <li><a href="distillation_vs_compression.html" data-i18n="nav.vs">Distillation vs Quantization</a></li>
+            <li><a href="pipelines.html" data-i18n="nav.pipelines">Basic Pipelines</a></li>
+          </ol>
+          <a href="what_is_distillation.html" class="btn" style="margin-top: 1rem; width: 100%;" data-i18n="home.beginner_btn">Start Here</a>
+        </div>
+
+        <!-- Advanced Path -->
+        <div class="card" style="border-top: 4px solid var(--color-expect-border);">
+          <h3><i data-lucide="zap"></i> <span data-i18n="home.advanced_title">Advanced Engineer</span></h3>
+          <p data-i18n="home.advanced_text">You know the theory. Jump straight to implementation details and benchmarks.</p>
+          <ol style="margin-top: 1rem; font-size: 0.95rem;">
+            <li><a href="pipelines.html" data-i18n="nav.pipelines">Task-Specific Pipelines</a></li>
+            <li><a href="data_for_distillation.html" data-i18n="nav.data">Data Curation & Synthetic Gen</a></li>
+            <li><a href="evaluating_distilled_models.html" data-i18n="nav.eval">Evaluation Metrics</a></li>
+            <li><a href="practical_tradeoffs_case_studies.html" data-i18n="nav.tradeoffs">Hardware Tradeoffs</a></li>
+          </ol>
+          <a href="pipelines.html" class="btn" style="margin-top: 1rem; width: 100%; background: var(--color-surface); color: var(--color-text-main); border: 1px solid var(--color-border);" data-i18n="home.advanced_btn">Jump to Pipelines</a>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <span class="callout-title"><i data-lucide="lightbulb"></i> <span data-i18n="home.tip_title">Tip for Developers</span></span>
+        <p id="s-tip" data-i18n="home.tip_text">If you are building a local assistant, do not start with a blank slate. Distilling a 70B model (like Llama-3-70B) into an 8B student often yields better results than fine-tuning the 8B model on human datasets alone.</p>
+      </div>
+
+    </main>
+  </div>
+  <script>
+    // Wait for lucide to load
+    window.onload = function() {
+      if(window.lucide) lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

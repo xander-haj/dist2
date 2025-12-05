@@ -1,0 +1,149 @@
+/* CSS Variables and Theme Specifics */
+
+:root {
+  /* Light Theme Defaults */
+  --color-bg: #f8fafc; /* Slate 50 */
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9; /* Slate 100 */
+  --color-text-main: #0f172a; /* Slate 900 */
+  --color-text-secondary: #475569; /* Slate 600 */
+  --color-text-muted: #94a3b8; /* Slate 400 */
+  --color-border: #e2e8f0; /* Slate 200 */
+  
+  --color-accent: #4f46e5; /* Indigo 600 */
+  --color-accent-bg: #eef2ff; /* Indigo 50 */
+  --color-accent-hover: #4338ca; /* Indigo 700 */
+
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  
+  --color-code-bg: #1e293b; /* Slate 800 for code blocks */
+  --color-code-text: #e2e8f0;
+
+  /* Callout Colors */
+  --color-tip-bg: #f0fdf4;
+  --color-tip-border: #22c55e;
+  --color-tip-text: #15803d;
+  
+  --color-pitfall-bg: #fef2f2;
+  --color-pitfall-border: #ef4444;
+  --color-pitfall-text: #b91c1c;
+  
+  --color-expect-bg: #faf5ff;
+  --color-expect-border: #a855f7;
+  --color-expect-text: #7e22ce;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme Overrides */
+  --color-bg: #0f172a; /* Slate 900 */
+  --color-surface: #1e293b; /* Slate 800 */
+  --color-surface-hover: #334155; /* Slate 700 */
+  --color-text-main: #f8fafc; /* Slate 50 */
+  --color-text-secondary: #cbd5e1; /* Slate 300 */
+  --color-text-muted: #64748b; /* Slate 500 */
+  --color-border: #334155; /* Slate 700 */
+  
+  --color-accent: #818cf8; /* Indigo 400 */
+  --color-accent-bg: rgba(79, 70, 229, 0.15);
+  --color-accent-hover: #a5b4fc; /* Indigo 300 */
+
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  
+  --color-code-bg: #020617; /* Slate 950 */
+  --color-code-text: #e2e8f0;
+
+  /* Callout Colors - Darkened */
+  --color-tip-bg: rgba(21, 128, 61, 0.1);
+  --color-tip-border: #22c55e;
+  --color-tip-text: #86efac;
+  
+  --color-pitfall-bg: rgba(185, 28, 28, 0.1);
+  --color-pitfall-border: #ef4444;
+  --color-pitfall-text: #fca5a5;
+  
+  --color-expect-bg: rgba(126, 34, 206, 0.1);
+  --color-expect-border: #a855f7;
+  --color-expect-text: #d8b4fe;
+}
+
+/* Utility Classes */
+.callout-tip {
+  background-color: var(--color-tip-bg);
+  border-inline-start-color: var(--color-tip-border);
+  color: var(--color-tip-text);
+}
+
+.callout-pitfall {
+  background-color: var(--color-pitfall-bg);
+  border-inline-start-color: var(--color-pitfall-border);
+  color: var(--color-pitfall-text);
+}
+
+.callout-expect {
+  background-color: var(--color-expect-bg);
+  border-inline-start-color: var(--color-expect-border);
+  color: var(--color-expect-text);
+}
+
+code {
+  font-family: 'Fira Code', monospace;
+  background: var(--color-surface-hover);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--color-code-bg);
+  color: var(--color-code-text);
+  padding: 1.5rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border: 1px solid var(--color-border);
+  direction: ltr; /* Code is always LTR */
+}
+
+/* TTS Buttons */
+.tts-section-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  margin-inline-start: 0.5rem;
+  vertical-align: middle;
+  transition: color 0.2s;
+}
+
+.tts-section-btn:hover {
+  color: var(--color-accent);
+}
+
+/* Header/TopBar Controls */
+.btn-icon {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  height: 36px;
+  padding: 0 1rem; /* Space for text */
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.btn-icon:hover, .btn-icon.active {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* RTL Specifics */
+html[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}

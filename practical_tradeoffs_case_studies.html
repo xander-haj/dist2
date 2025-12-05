@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="nav.tradeoffs">Tradeoffs & Case Studies - Distill.Lab</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module">
+    import { initNavigation } from './nav.js';
+    import { initTheme } from './theme-toggle.js';
+    import { initSimulator } from './case_studies.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initTheme();
+      initSimulator();
+    });
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="top-bar"></div>
+  <div class="app-container">
+    <nav class="sidebar">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <div class="nav-section-title" data-i18n="nav.curriculum">Curriculum</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="index.html" class="nav-link" data-i18n="nav.intro">Introduction</a></li>
+        <li class="nav-item"><a href="what_is_distillation.html" class="nav-link" data-i18n="nav.what_is">What is Distillation?</a></li>
+        <li class="nav-item"><a href="core_concepts.html" class="nav-link" data-i18n="nav.concepts">Core Concepts</a></li>
+        <li class="nav-item"><a href="distillation_vs_compression.html" class="nav-link" data-i18n="nav.vs">Distillation vs Compression</a></li>
+        <li class="nav-item"><a href="choosing_model_sizes.html" class="nav-link" data-i18n="nav.sizes">Target Model Sizes</a></li>
+        <li class="nav-item"><a href="data_for_distillation.html" class="nav-link" data-i18n="nav.data">Data Engineering</a></li>
+        <li class="nav-item"><a href="pipelines.html" class="nav-link" data-i18n="nav.pipelines">Distillation Pipelines</a></li>
+        <li class="nav-item"><a href="evaluating_distilled_models.html" class="nav-link" data-i18n="nav.eval">Evaluation</a></li>
+        <li class="nav-item"><a href="practical_tradeoffs_case_studies.html" class="nav-link active" data-i18n="nav.tradeoffs">Tradeoffs & Cases</a></li>
+        <li class="nav-item"><a href="glossary.html" class="nav-link" data-i18n="nav.glossary">Glossary</a></li>
+      </ul>
+      <button class="theme-toggle-btn desktop-theme-toggle" style="margin-top: auto;"><i data-lucide="moon"></i></button>
+    </nav>
+    <header class="header">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <button class="menu-toggle"><i data-lucide="menu"></i></button>
+    </header>
+
+    <main class="main-content">
+      <h1><span data-i18n="cases.title">Practical Tradeoffs & Case Studies</span> <button class="tts-section-btn" data-target="s-intro"><i data-lucide="volume-2"></i></button></h1>
+      <p class="lead" id="s-intro" data-i18n="cases.lead">Distillation is the art of compromise. Explore how real-world constraints shape engineering decisions.</p>
+
+      <div class="card">
+        <h3 data-i18n="cases.sim_title"><i data-lucide="swords"></i> Strategy Simulator</h3>
+        <p data-i18n="cases.sim_desc">Configure a deployment scenario to receive an engineering recommendation.</p>
+        <div class="sim-controls" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <div class="tool-group">
+            <label data-i18n="cases.label_device">Device</label>
+            <select id="sim-device" class="tool-select">
+              <option value="mobile" data-i18n="cases.opt_mobile">Mobile (2-4GB RAM)</option>
+              <option value="laptop" data-i18n="cases.opt_laptop">Laptop (8-16GB RAM)</option>
+              <option value="desktop" data-i18n="cases.opt_desktop">Desktop (24GB VRAM)</option>
+            </select>
+          </div>
+          <div class="tool-group">
+            <label data-i18n="cases.label_task">Task</label>
+            <select id="sim-task" class="tool-select">
+              <option value="simple" data-i18n="cases.opt_simple">Simple Format/Classify</option>
+              <option value="coding" data-i18n="cases.opt_coding">Coding/Reasoning</option>
+              <option value="creative" data-i18n="cases.opt_creative">Creative/Analysis</option>
+            </select>
+          </div>
+        </div>
+        <button id="sim-run-btn" class="btn" style="width:100%" data-i18n="cases.btn_run">Analyze & Recommend</button>
+        <div id="sim-output" class="sim-result" style="margin-top: 1.5rem; border-inline-start: 4px solid var(--color-accent); padding-inline-start: 1rem; display:none;">
+          <h4 id="sim-title" style="color: var(--color-accent);"></h4>
+          <p id="sim-desc"></p>
+          <ul id="sim-details"></ul>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>window.onload = () => { if(window.lucide) lucide.createIcons(); }</script>
+</body>
+</html>

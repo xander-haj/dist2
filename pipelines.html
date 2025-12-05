@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="nav.pipelines">Pipelines - Distill.Lab</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module">
+    import { initNavigation } from './nav.js';
+    import { initTheme } from './theme-toggle.js';
+    import { initPipelineLogic } from './pipeline_logic.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initTheme();
+      initPipelineLogic();
+    });
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="top-bar"></div>
+  <div class="app-container">
+    <nav class="sidebar">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <div class="nav-section-title" data-i18n="nav.curriculum">Curriculum</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="index.html" class="nav-link" data-i18n="nav.intro">Introduction</a></li>
+        <li class="nav-item"><a href="what_is_distillation.html" class="nav-link" data-i18n="nav.what_is">What is Distillation?</a></li>
+        <li class="nav-item"><a href="core_concepts.html" class="nav-link" data-i18n="nav.concepts">Core Concepts</a></li>
+        <li class="nav-item"><a href="distillation_vs_compression.html" class="nav-link" data-i18n="nav.vs">Distillation vs Compression</a></li>
+        <li class="nav-item"><a href="choosing_model_sizes.html" class="nav-link" data-i18n="nav.sizes">Target Model Sizes</a></li>
+        <li class="nav-item"><a href="data_for_distillation.html" class="nav-link" data-i18n="nav.data">Data Engineering</a></li>
+        <li class="nav-item"><a href="pipelines.html" class="nav-link active" data-i18n="nav.pipelines">Distillation Pipelines</a></li>
+        <li class="nav-item"><a href="evaluating_distilled_models.html" class="nav-link" data-i18n="nav.eval">Evaluation</a></li>
+        <li class="nav-item"><a href="practical_tradeoffs_case_studies.html" class="nav-link" data-i18n="nav.tradeoffs">Tradeoffs & Cases</a></li>
+        <li class="nav-item"><a href="glossary.html" class="nav-link" data-i18n="nav.glossary">Glossary</a></li>
+      </ul>
+      <button class="theme-toggle-btn desktop-theme-toggle" style="margin-top: auto;"><i data-lucide="moon"></i></button>
+    </nav>
+    <header class="header">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <button class="menu-toggle"><i data-lucide="menu"></i></button>
+    </header>
+
+    <main class="main-content">
+      <h1><span data-i18n="pipelines.title">Distillation Pipelines</span> <button class="tts-section-btn" data-target="s-intro"><i data-lucide="volume-2"></i></button></h1>
+      <p class="lead" id="s-intro" data-i18n="pipelines.lead">A standardized workflow for taking a Teacher and producing a Student. Click the steps below to expand details.</p>
+
+      <div class="pipeline-container" style="display: flex; flex-direction: column; gap: 1rem;">
+        
+        <!-- Step 1 -->
+        <div class="card pipeline-step" data-step="1">
+          <h3 style="margin:0; cursor: pointer; display: flex; justify-content: space-between;">
+            <span data-i18n="pipelines.step_1_title">1. Define Scope & Teacher</span>
+            <i data-lucide="chevron-down"></i>
+          </h3>
+          <div class="step-content" style="display: none; margin-top: 1rem;">
+            <p data-i18n="pipelines.step_1_text">Choose your task...</p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="card pipeline-step" data-step="2">
+          <h3 style="margin:0; cursor: pointer; display: flex; justify-content: space-between;">
+            <span data-i18n="pipelines.step_2_title">2. Data Curation</span>
+            <i data-lucide="chevron-down"></i>
+          </h3>
+          <div class="step-content" style="display: none; margin-top: 1rem;">
+            <p data-i18n="pipelines.step_2_text">Generate 10k-50k samples...</p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="card pipeline-step" data-step="3">
+          <h3 style="margin:0; cursor: pointer; display: flex; justify-content: space-between;">
+            <span data-i18n="pipelines.step_3_title">3. Training (SFT)</span>
+            <i data-lucide="chevron-down"></i>
+          </h3>
+          <div class="step-content" style="display: none; margin-top: 1rem;">
+            <p data-i18n="pipelines.step_3_text">Fine-Tune the Student...</p>
+            <code style="display:block; margin-top:0.5rem;">trainer = SFTTrainer(model=student, train_dataset=dataset, ...)</code>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="card pipeline-step" data-step="4">
+            <h3 style="margin:0; cursor: pointer; display: flex; justify-content: space-between;">
+              <span data-i18n="pipelines.step_4_title">4. Evaluation & Iteration</span>
+              <i data-lucide="chevron-down"></i>
+            </h3>
+            <div class="step-content" style="display: none; margin-top: 1rem;">
+              <p data-i18n="pipelines.step_4_text">Run benchmarks...</p>
+            </div>
+          </div>
+
+      </div>
+    </main>
+  </div>
+  <script>window.onload = () => { if(window.lucide) lucide.createIcons(); }</script>
+</body>
+</html>

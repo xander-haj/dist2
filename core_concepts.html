@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="nav.concepts">Core Concepts - Distill.Lab</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module">
+    import { initNavigation } from './nav.js';
+    import { initTheme } from './theme-toggle.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initTheme();
+    });
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div id="top-bar"></div>
+  <div class="app-container">
+    <nav class="sidebar">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <div class="nav-section-title" data-i18n="nav.curriculum">Curriculum</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="index.html" class="nav-link" data-i18n="nav.intro">Introduction</a></li>
+        <li class="nav-item"><a href="what_is_distillation.html" class="nav-link" data-i18n="nav.what_is">What is Distillation?</a></li>
+        <li class="nav-item"><a href="core_concepts.html" class="nav-link active" data-i18n="nav.concepts">Core Concepts</a></li>
+        <li class="nav-item"><a href="distillation_vs_compression.html" class="nav-link" data-i18n="nav.vs">Distillation vs Compression</a></li>
+        <li class="nav-item"><a href="choosing_model_sizes.html" class="nav-link" data-i18n="nav.sizes">Target Model Sizes</a></li>
+        <li class="nav-item"><a href="data_for_distillation.html" class="nav-link" data-i18n="nav.data">Data Engineering</a></li>
+        <li class="nav-item"><a href="pipelines.html" class="nav-link" data-i18n="nav.pipelines">Distillation Pipelines</a></li>
+        <li class="nav-item"><a href="evaluating_distilled_models.html" class="nav-link" data-i18n="nav.eval">Evaluation</a></li>
+        <li class="nav-item"><a href="practical_tradeoffs_case_studies.html" class="nav-link" data-i18n="nav.tradeoffs">Tradeoffs & Cases</a></li>
+        <li class="nav-item"><a href="glossary.html" class="nav-link" data-i18n="nav.glossary">Glossary</a></li>
+      </ul>
+      <button class="theme-toggle-btn desktop-theme-toggle" style="margin-top: auto;"><i data-lucide="moon"></i></button>
+    </nav>
+    
+    <header class="header">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <button class="menu-toggle"><i data-lucide="menu"></i></button>
+    </header>
+
+    <main class="main-content">
+      <h1><span data-i18n="concepts.title">Core Concepts</span> <button class="tts-section-btn" data-target="s-core"><i data-lucide="volume-2"></i></button></h1>
+      <p class="lead" id="s-core" data-i18n="concepts.lead">To successfully distill a model, you must understand the signals being transferred. It is not just about text; it is about probability distributions.</p>
+
+      <h2 id="h-logits"><span data-i18n="concepts.logits_title">1. Logits and Soft Labels</span> <button class="tts-section-btn" data-target="s-logits"><i data-lucide="volume-2"></i></button></h2>
+      <div id="s-logits">
+        <p data-i18n="concepts.logits_text_1">Standard training uses "Hard Labels" (Ground Truth)...</p>
+        <p data-i18n-html="concepts.logits_text_2"><strong>Logits</strong> are the raw scores...</p>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="concepts.temp_title">Math: The Temperature Parameter ($T$)</h3>
+        <p data-i18n="concepts.temp_desc">To expose more "Dark Knowledge"...</p>
+        <p>$$ p_i = \frac{\exp(z_i / T)}{\sum_j \exp(z_j / T)} $$</p>
+        <ul>
+          <li data-i18n-html="concepts.temp_li_1"><strong>$T = 1$:</strong> Standard Softmax...</li>
+          <li data-i18n-html="concepts.temp_li_2"><strong>$T > 1$:</strong> Softens the distribution...</li>
+        </ul>
+      </div>
+
+      <h2 id="h-loss"><span data-i18n="concepts.loss_title">2. Loss Functions</span> <button class="tts-section-btn" data-target="s-loss"><i data-lucide="volume-2"></i></button></h2>
+      <div id="s-loss">
+        <p data-i18n="concepts.loss_intro">Distillation typically combines two loss functions:</p>
+        <ul>
+            <li data-i18n-html="concepts.loss_kl"><strong>Distillation Loss (KL Divergence):</strong>...</li>
+            <li data-i18n-html="concepts.loss_ce"><strong>Student Loss (Cross-Entropy):</strong>...</li>
+        </ul>
+        <p>$$ L = \alpha L_{CE} + (1-\alpha) T^2 L_{KL} $$</p>
+      </div>
+
+      <div class="callout callout-pitfall">
+        <span class="callout-title"><i data-lucide="alert-triangle"></i> <span data-i18n="concepts.pitfall_title">Pitfall: Vocabulary Mismatch</span></span>
+        <p data-i18n-html="concepts.pitfall_text">Logit-based distillation requires the Teacher and Student to share the exact same Tokenizer...</p>
+      </div>
+    </main>
+  </div>
+  <script>window.onload = () => { if(window.lucide) lucide.createIcons(); }</script>
+</body>
+</html>

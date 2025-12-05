@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="nav.sizes">Choosing Model Sizes - Distill.Lab</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module">
+    import { initNavigation } from './nav.js';
+    import { initTheme } from './theme-toggle.js';
+    import { initHardwareRecommender } from './model_utils.js';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initTheme();
+      initHardwareRecommender();
+    });
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="top-bar"></div>
+  <div class="app-container">
+    <nav class="sidebar">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <div class="nav-section-title" data-i18n="nav.curriculum">Curriculum</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="index.html" class="nav-link" data-i18n="nav.intro">Introduction</a></li>
+        <li class="nav-item"><a href="what_is_distillation.html" class="nav-link" data-i18n="nav.what_is">What is Distillation?</a></li>
+        <li class="nav-item"><a href="core_concepts.html" class="nav-link" data-i18n="nav.concepts">Core Concepts</a></li>
+        <li class="nav-item"><a href="distillation_vs_compression.html" class="nav-link" data-i18n="nav.vs">Distillation vs Compression</a></li>
+        <li class="nav-item"><a href="choosing_model_sizes.html" class="nav-link active" data-i18n="nav.sizes">Target Model Sizes</a></li>
+        <li class="nav-item"><a href="data_for_distillation.html" class="nav-link" data-i18n="nav.data">Data Engineering</a></li>
+        <li class="nav-item"><a href="pipelines.html" class="nav-link" data-i18n="nav.pipelines">Distillation Pipelines</a></li>
+        <li class="nav-item"><a href="evaluating_distilled_models.html" class="nav-link" data-i18n="nav.eval">Evaluation</a></li>
+        <li class="nav-item"><a href="practical_tradeoffs_case_studies.html" class="nav-link" data-i18n="nav.tradeoffs">Tradeoffs & Cases</a></li>
+        <li class="nav-item"><a href="glossary.html" class="nav-link" data-i18n="nav.glossary">Glossary</a></li>
+      </ul>
+      <button class="theme-toggle-btn desktop-theme-toggle" style="margin-top: auto;"><i data-lucide="moon"></i></button>
+    </nav>
+
+    <header class="header">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <button class="menu-toggle"><i data-lucide="menu"></i></button>
+    </header>
+
+    <main class="main-content">
+      <h1><span data-i18n="sizes.title">Choosing Target Model Sizes</span> <button class="tts-section-btn" data-target="s-intro"><i data-lucide="volume-2"></i></button></h1>
+      <p class="lead" id="s-intro" data-i18n="sizes.lead">The first step in distillation is choosing the student's size. This is dictated almost entirely by your target deployment hardware.</p>
+
+      <h2 data-i18n="sizes.tool_title">Interactive Hardware Recommender</h2>
+      <div class="card" style="background: var(--color-code-bg); border-color: var(--color-accent);">
+        <div class="tool-group">
+            <label style="color: var(--color-code-text);" data-i18n="sizes.label_vram">Available VRAM (GB)</label>
+            <select id="hw-vram" class="tool-select">
+                <option value="4">4 GB</option>
+                <option value="8">8 GB</option>
+                <option value="12">12 GB</option>
+                <option value="24">24 GB</option>
+                <option value="48">48+ GB</option>
+            </select>
+        </div>
+        <div class="tool-group">
+            <label style="color: var(--color-code-text);" data-i18n="sizes.label_use">Primary Use Case</label>
+            <select id="hw-use" class="tool-select">
+                <option value="chat" data-i18n="sizes.opt_chat">General Chat</option>
+                <option value="code" data-i18n="sizes.opt_code">Coding Assistant</option>
+                <option value="rag" data-i18n="sizes.opt_rag">RAG (Document QA)</option>
+            </select>
+        </div>
+        <button id="hw-btn" class="btn" style="width: 100%;" data-i18n="sizes.btn_find">Find Best Model Size</button>
+        <div id="hw-result" style="margin-top: 1.5rem; color: var(--color-code-text); display: none;">
+            <h3 id="rec-title" style="color: var(--color-accent);" data-i18n="sizes.rec_title">Recommendation</h3>
+            <p id="rec-text"></p>
+        </div>
+      </div>
+
+      <h2 data-i18n="sizes.tiers_title">Size Tiers Breakdown</h2>
+      
+      <h3><i data-lucide="smartphone"></i> <span data-i18n="sizes.t1_title">1B - 3B Parameters</span></h3>
+      <p data-i18n-html="sizes.t1_target"><strong>Target:</strong> Phones...</p>
+      <p data-i18n-html="sizes.t1_cap"><strong>Capabilities:</strong> Good for grammar...</p>
+
+      <h3><i data-lucide="laptop"></i> <span data-i18n="sizes.t2_title">7B - 9B Parameters</span></h3>
+      <p data-i18n-html="sizes.t2_target"><strong>Target:</strong> Most consumer laptops...</p>
+      <p data-i18n-html="sizes.t2_cap"><strong>Capabilities:</strong> The "Sweet Spot"...</p>
+
+      <h3><i data-lucide="server"></i> <span data-i18n="sizes.t3_title">13B - 30B Parameters</span></h3>
+      <p data-i18n-html="sizes.t3_target"><strong>Target:</strong> Desktops...</p>
+      <p data-i18n-html="sizes.t3_cap"><strong>Capabilities:</strong> Near-GPT-3.5...</p>
+    </main>
+  </div>
+  <script>window.onload = () => { if(window.lucide) lucide.createIcons(); }</script>
+</body>
+</html>

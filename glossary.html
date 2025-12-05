@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="nav.glossary">Glossary - Distill.Lab</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module">
+    import { initNavigation } from './nav.js';
+    import { initTheme } from './theme-toggle.js';
+    import { initGlossarySearch } from './glossary_logic.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initTheme();
+      initGlossarySearch();
+    });
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="top-bar"></div>
+  <div class="app-container">
+    <nav class="sidebar">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <div class="nav-section-title" data-i18n="nav.curriculum">Curriculum</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="index.html" class="nav-link" data-i18n="nav.intro">Introduction</a></li>
+        <li class="nav-item"><a href="what_is_distillation.html" class="nav-link" data-i18n="nav.what_is">What is Distillation?</a></li>
+        <li class="nav-item"><a href="core_concepts.html" class="nav-link" data-i18n="nav.concepts">Core Concepts</a></li>
+        <li class="nav-item"><a href="distillation_vs_compression.html" class="nav-link" data-i18n="nav.vs">Distillation vs Compression</a></li>
+        <li class="nav-item"><a href="choosing_model_sizes.html" class="nav-link" data-i18n="nav.sizes">Target Model Sizes</a></li>
+        <li class="nav-item"><a href="data_for_distillation.html" class="nav-link" data-i18n="nav.data">Data Engineering</a></li>
+        <li class="nav-item"><a href="pipelines.html" class="nav-link" data-i18n="nav.pipelines">Distillation Pipelines</a></li>
+        <li class="nav-item"><a href="evaluating_distilled_models.html" class="nav-link" data-i18n="nav.eval">Evaluation</a></li>
+        <li class="nav-item"><a href="practical_tradeoffs_case_studies.html" class="nav-link" data-i18n="nav.tradeoffs">Tradeoffs & Cases</a></li>
+        <li class="nav-item"><a href="glossary.html" class="nav-link active" data-i18n="nav.glossary">Glossary</a></li>
+      </ul>
+      <button class="theme-toggle-btn desktop-theme-toggle" style="margin-top: auto;"><i data-lucide="moon"></i></button>
+    </nav>
+    <header class="header">
+      <a href="index.html" class="brand"><i data-lucide="cpu"></i> <span data-i18n="brand">Distill.Lab</span></a>
+      <button class="menu-toggle"><i data-lucide="menu"></i></button>
+    </header>
+
+    <main class="main-content">
+      <h1><span data-i18n="glossary.title">Glossary of Terms</span> <button class="tts-section-btn" data-target="glossary-content"><i data-lucide="volume-2"></i></button></h1>
+      <div style="position: sticky; top: 0; background: var(--glass-bg); padding: 1rem 0; z-index: 10; backdrop-filter: blur(10px);">
+        <input type="text" id="glossary-search" class="tool-select" data-i18n-placeholder="glossary.search_placeholder" placeholder="Search terms...">
+      </div>
+
+      <div id="glossary-content">
+        <div class="term-group">
+          <h3>A</h3>
+          <dl>
+            <dt><strong>Activation</strong></dt>
+            <dd data-i18n="glossary.term_activation">The output of a neuron/layer...</dd>
+          </dl>
+        </div>
+        <div class="term-group">
+          <h3>D</h3>
+          <dl>
+            <dt><strong>Distillation</strong></dt>
+            <dd data-i18n="glossary.term_distillation">Transferring knowledge...</dd>
+            <dt><strong>Dark Knowledge</strong></dt>
+            <dd data-i18n="glossary.term_dark_knowledge">Information hidden...</dd>
+          </dl>
+        </div>
+        <div class="term-group">
+          <h3>K</h3>
+          <dl>
+            <dt><strong>KL Divergence</strong></dt>
+            <dd data-i18n="glossary.term_kl">Loss function measuring...</dd>
+          </dl>
+        </div>
+        <div class="term-group">
+          <h3>L</h3>
+          <dl>
+            <dt><strong>Logits</strong></dt>
+            <dd data-i18n="glossary.term_logits">Raw prediction scores...</dd>
+          </dl>
+        </div>
+        <div class="term-group">
+          <h3>T</h3>
+          <dl>
+            <dt><strong>Temperature</strong></dt>
+            <dd data-i18n="glossary.term_temp">Hyperparameter to soften...</dd>
+          </dl>
+        </div>
+      </div>
+      <p id="no-results" style="display:none" data-i18n="glossary.no_results">No terms found.</p>
+    </main>
+  </div>
+  <script>window.onload = () => { if(window.lucide) lucide.createIcons(); }</script>
+</body>
+</html>
