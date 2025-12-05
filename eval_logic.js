@@ -14,8 +14,10 @@ export function initEvalSimulator() {
     const distilledScore = (teacherScore * retention).toFixed(1);
     const baselineScore = (teacherScore * (retention - 0.1)).toFixed(1);
 
-    // Clear previous results
-    resultDiv.textContent = '';
+    // Clear previous results safely
+    while (resultDiv.firstChild) {
+        resultDiv.removeChild(resultDiv.firstChild);
+    }
 
     // Create Result Element (Distilled)
     // Structure: <p>Label <span class="accent">{score}</span></p>

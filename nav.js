@@ -50,7 +50,7 @@ export function initNavigation() {
 
   const topBar = document.getElementById('top-bar');
   if (topBar) {
-      // Speed Selector added
+      // Added Speed Selector with 0.1 intervals
       const controlsHTML = `
         <select id="lang-select" class="tool-select" style="width: auto; padding: 0.4rem 1.0rem;" title="Select Language">
           <option value="en">English</option>
@@ -60,10 +60,17 @@ export function initNavigation() {
 
         <select id="speed-select" class="tool-select" style="width: auto; padding: 0.4rem 0.5rem;" title="Playback Speed">
           <option value="0.5">0.5x</option>
+          <option value="0.6">0.6x</option>
+          <option value="0.7">0.7x</option>
           <option value="0.8">0.8x</option>
+          <option value="0.9">0.9x</option>
           <option value="1.0" selected>1.0x</option>
+          <option value="1.1">1.1x</option>
           <option value="1.2">1.2x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.4">1.4x</option>
           <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
           <option value="2.0">2.0x</option>
           <option value="2.5">2.5x</option>
           <option value="3.0">3.0x</option>
