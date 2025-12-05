@@ -14,6 +14,9 @@
     "glossary": "Glossary",
     "play_all": "Play All",
     "play_all_label": "Play Page",
+    "loading_model": "Loading Model:",
+    "generating": "Generating...",
+    "playing": "Playing",
     "voice_label": "Voice",
     "voice_auto": "Auto (Default)"
   },

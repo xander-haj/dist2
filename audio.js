@@ -1,10 +1,11 @@
 /**
- * Audio/TTS Module with Piper Support & Background Playback
- * * FEATURES:
- * - Uses Piper WASM for local neural TTS (requires /piper/ directory with models).
- * - Background Audio Support via MediaStreamDestination & <audio> hack.
- * - Playback Speed Control (0.5x - 3.0x).
- * - Media Session API integration for lock-screen controls.
+ * Audio/TTS Module with Piper Support, Background Playback & Visual Feedback
+ * FEATURES:
+ * - Real-time Model Download Progress (Numerical %).
+ * - Button State Management (Disabled until Ready).
+ * - Visual "Processing" feedback on click.
+ * - Background Audio Support via MediaStreamDestination.
+ * - Playback Speed Control.
  */
 import { t } from './translations.js';
 
@@ -16,9 +17,9 @@ let playbackRate = 1.0;
 let backgroundAudioElem = null;
 let mediaStreamDest = null;
 let gainNode = null;
+let isModelReady = false;
 
 // Configuration for Piper
-// NOTE: You must place 'piper_worker.js', 'piper.wasm', and model files in /piper/
 const PIPER_CONFIG = {
   workerUrl: './piper/piper_worker.js', 
   modelUrl: './piper/en_US-lessac-medium.onnx',
@@ -27,36 +28,141 @@ const PIPER_CONFIG = {
 
 export function initAudio() {
   setupUIHandlers();
-  setupBackgroundAudioHack(); // Crucial for mobile lock screen
+  setupBackgroundAudioHack(); 
+  disableAllButtons(true); // Disable until model loads
+  initPiperWithProgress();
 }
 
 export function setPlaybackSpeed(speed) {
   playbackRate = parseFloat(speed);
-  // If we were using native AudioBufferSourceNodes directly, we'd update them here.
-  // Since we process a queue, the next chunk will pick up the speed.
+}
+
+/**
+ * Manages the download of Piper models with numerical progress updates.
+ */
+async function initPiperWithProgress() {
+  const playAllBtn = document.getElementById('play-all-btn');
+  const updateProgress = (pct) => {
+    if (playAllBtn) {
+      // Find the text span or replace content safely
+      const span = playAllBtn.querySelector('span');
+      if (span) span.textContent = `${t('nav.loading_model')} ${pct}%`;
+    }
+  };
+
+  try {
+    updateProgress(0);
+
+    // 1. Fetch Model (ONNX)
+    const modelBlob = await fetchWithProgress(PIPER_CONFIG.modelUrl, (loaded, total) => {
+      // Model is ~90% of the weight
+      const pct = Math.round((loaded / total) * 90);
+      updateProgress(pct);
+    });
+
+    // 2. Fetch Config (JSON)
+    const configBlob = await fetchWithProgress(PIPER_CONFIG.modelConfigUrl, (loaded, total) => {
+      // Config is small, represents last 10%
+      const pct = 90 + Math.round((loaded / total) * 10);
+      updateProgress(pct);
+    });
+
+    // 3. Initialize Worker with Blob URLs
+    const modelUrl = URL.createObjectURL(modelBlob);
+    const configUrl = URL.createObjectURL(configBlob);
+
+    initWorker(modelUrl, configUrl);
+
+  } catch (e) {
+    console.error("Model Load Failed", e);
+    if (playAllBtn) {
+        const span = playAllBtn.querySelector('span');
+        if(span) span.textContent = "Load Error";
+    }
+  }
+}
+
+function fetchWithProgress(url, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+
+    xhr.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(e.loaded, e.total);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) resolve(xhr.response);
+      else reject(new Error(`Fetch failed: ${xhr.status}`));
+    };
+
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send();
+  });
+}
+
+function initWorker(modelBlobUrl, configBlobUrl) {
+  try {
+    piperWorker = new Worker(PIPER_CONFIG.workerUrl);
+    
+    piperWorker.onmessage = function(event) {
+      const { type, data } = event.data;
+      if (type === 'pcm') {
+        // Audio Data Received
+        handleAudioChunk(data);
+      } else if (type === 'done') {
+        // Utterance Complete
+      } else if (type === 'ready') {
+        // Worker is ready
+        onModelReady();
+      } else if (type === 'error') {
+        console.error('Piper Worker Error:', data);
+      }
+    };
+
+    piperWorker.postMessage({
+      type: 'init',
+      model: modelBlobUrl,
+      config: configBlobUrl
+    });
+    
+    // Some workers don't send explicit 'ready', so we might assume ready after init post
+    // But standard piper usually confirms. If not, we can force ready state here:
+    // onModelReady(); // Uncomment if your worker is silent on init
+
+  } catch (e) {
+    console.warn("Piper Worker failed.", e);
+  }
+}
+
+function onModelReady() {
+  isModelReady = true;
+  disableAllButtons(false);
+  
+  // Reset Play All Button Text
+  const playAllBtn = document.getElementById('play-all-btn');
+  if (playAllBtn) {
+    const span = playAllBtn.querySelector('span');
+    if(span) span.textContent = t('nav.play_all_label');
+    playAllBtn.classList.remove('loading');
+  }
 }
 
 function setupBackgroundAudioHack() {
-  // To keep audio alive in background on iOS/Android, we pipe WebAudio 
-  // into an HTML <audio> element.
   backgroundAudioElem = new Audio();
   backgroundAudioElem.loop = true;
   backgroundAudioElem.autoplay = true;
-  // Silent track to unlock audio on interaction if needed, 
-  // but mostly we rely on srcObject later.
+  // Silent wav
   backgroundAudioElem.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAgZGF0YQQAAAAAAA==';
   
-  // Interaction listener to unlock AudioContext
   const unlockHandler = () => {
-    if (!audioContext) {
-      initAudioContext();
-    }
-    if (audioContext && audioContext.state === 'suspended') {
-      audioContext.resume();
-    }
-    if (backgroundAudioElem.paused) {
-      backgroundAudioElem.play().catch(e => console.log("Background audio play error", e));
-    }
+    if (!audioContext) initAudioContext();
+    if (audioContext?.state === 'suspended') audioContext.resume();
+    if (backgroundAudioElem.paused) backgroundAudioElem.play().catch(() => {});
+    
     document.removeEventListener('click', unlockHandler);
     document.removeEventListener('touchstart', unlockHandler);
   };
@@ -68,60 +174,28 @@ function setupBackgroundAudioHack() {
 function initAudioContext() {
   const AudioCtor = window.AudioContext || window.webkitAudioContext;
   audioContext = new AudioCtor({ latencyHint: 'interactive' });
-  
-  // Create a destination that flows into the HTML Audio Element
   mediaStreamDest = audioContext.createMediaStreamDestination();
   backgroundAudioElem.srcObject = mediaStreamDest.stream;
-  
-  // Gain node for volume/mute control
   gainNode = audioContext.createGain();
-  gainNode.connect(mediaStreamDest); // Connect graph to the stream
-  
-  initPiperWorker();
+  gainNode.connect(mediaStreamDest);
 }
 
-function initPiperWorker() {
-  try {
-    piperWorker = new Worker(PIPER_CONFIG.workerUrl);
-    
-    piperWorker.onmessage = function(event) {
-      const { type, data } = event.data;
-      if (type === 'pcm') {
-        queueAudioChunk(data); // data is Float32Array or Int16Array
-      } else if (type === 'done') {
-        // End of utterance
-      } else if (type === 'error') {
-        console.error('Piper Worker Error:', data);
-      }
-    };
+// Track the currently active button to show visual feedback
+let activeBtnElement = null;
 
-    // Initialize Piper with Model
-    piperWorker.postMessage({
-      type: 'init',
-      model: PIPER_CONFIG.modelUrl,
-      config: PIPER_CONFIG.modelConfigUrl
-    });
+export function speakText(text, sourceBtn = null) {
+  if (!text || !isModelReady) return;
 
-  } catch (e) {
-    console.warn("Piper Worker failed to initialize. Ensure files exist in /piper/", e);
-  }
-}
-
-/**
- * Main function to speak text
- */
-export function speakText(text) {
-  if (!text) return;
-
-  // Cancel current
   stopAudio();
   
-  // Ensure context is running
-  if (audioContext && audioContext.state === 'suspended') {
-    audioContext.resume();
+  // Visual Feedback: Set Processing State
+  if (sourceBtn) {
+    activeBtnElement = sourceBtn;
+    setButtonState(sourceBtn, 'processing');
   }
 
-  // Update Media Session Metadata
+  if (audioContext?.state === 'suspended') audioContext.resume();
+
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "Distill.Lab TTS",
@@ -129,36 +203,32 @@ export function speakText(text) {
       album: "Course Audio"
     });
     navigator.mediaSession.playbackState = "playing";
-    
     navigator.mediaSession.setActionHandler('stop', stopAudio);
     navigator.mediaSession.setActionHandler('pause', stopAudio);
   }
 
-  // Send text to worker
   if (piperWorker) {
     isPlaying = true;
-    updatePlayIcons(true);
     piperWorker.postMessage({ type: 'speak', text: text });
-  } else {
-    console.warn("Piper not ready. Fallback to Synthesis not implemented to strictly follow Piper request.");
   }
 }
 
-function queueAudioChunk(pcmData) {
+function handleAudioChunk(pcmData) {
   if (!audioContext) return;
-
-  // Piper usually outputs 16-bit mono PCM at 22050Hz (dependent on model)
-  // We need to convert to Float32 AudioBuffer
   
-  const sampleRate = 22050; // Standard for Lessac model, adjust based on config
+  // Received audio means processing is done, we are now playing
+  if (activeBtnElement && activeBtnElement.dataset.state === 'processing') {
+    setButtonState(activeBtnElement, 'playing');
+  }
+  updatePlayIcons(true); // Ensure Play All is active if needed
+
+  const sampleRate = 22050; 
   const buffer = audioContext.createBuffer(1, pcmData.length, sampleRate);
   const channelData = buffer.getChannelData(0);
 
-  // If data is Float32, copy. If Int16, convert.
   if (pcmData instanceof Float32Array) {
     channelData.set(pcmData);
   } else {
-    // Int16 to Float32
     for (let i = 0; i < pcmData.length; i++) {
       channelData[i] = pcmData[i] / 32768.0;
     }
@@ -169,26 +239,7 @@ function queueAudioChunk(pcmData) {
   source.playbackRate.value = playbackRate;
   source.connect(gainNode);
 
-  // Simple scheduling: Play immediately or append to end
-  // For a robust queue, we'd track `nextStartTime`
-  // Here we just play as they arrive for streaming effect, assuming worker is fast enough
-  // or simple sequencing.
-  
   const currentTime = audioContext.currentTime;
-  // A real implementation needs a proper scheduler to avoid gaps/overlaps
-  // For simplicity in this demo, we assume chunks arrive in order and we rely on 'ended'.
-  
-  if (audioQueue.length > 0) {
-     const lastNode = audioQueue[audioQueue.length - 1];
-     // We can't easily query 'when it ends' on raw nodes without tracking duration
-     // We'll stick to a simple strategy:
-     // If this is a stream, we really need a ScriptProcessor or AudioWorklet, 
-     // but sticking to BufferSourceNode is easier for compatibility.
-  }
-  
-  // Track start times to ensure continuity would require a variable: nextTime
-  // Let's implement a basic `nextTime` scheduler.
-  
   if (typeof window.nextAudioTime === 'undefined' || window.nextAudioTime < currentTime) {
     window.nextAudioTime = currentTime;
   }
@@ -197,57 +248,120 @@ function queueAudioChunk(pcmData) {
   window.nextAudioTime += buffer.duration / playbackRate;
   
   source.onended = () => {
-    // Cleanup if needed
     const index = audioQueue.indexOf(source);
     if (index > -1) audioQueue.splice(index, 1);
     
     if (audioQueue.length === 0 && window.nextAudioTime <= audioContext.currentTime + 0.1) {
-       isPlaying = false;
-       updatePlayIcons(false);
-       if ('mediaSession' in navigator) {
-         navigator.mediaSession.playbackState = "none";
-       }
+       onPlaybackEnd();
     }
   };
 
   audioQueue.push(source);
 }
 
-export function stopAudio() {
-  // Stop all sources
-  audioQueue.forEach(source => {
-    try { source.stop(); } catch(e) {}
-  });
-  audioQueue = [];
-  
-  if (piperWorker) {
-    piperWorker.postMessage({ type: 'stop' });
-  }
-  
-  window.nextAudioTime = audioContext ? audioContext.currentTime : 0;
-  
+function onPlaybackEnd() {
   isPlaying = false;
   updatePlayIcons(false);
+  if (activeBtnElement) {
+    setButtonState(activeBtnElement, 'idle');
+    activeBtnElement = null;
+  }
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
+}
+
+export function stopAudio() {
+  audioQueue.forEach(source => { try { source.stop(); } catch(e) {} });
+  audioQueue = [];
+  if (piperWorker) piperWorker.postMessage({ type: 'stop' });
   
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.playbackState = "none";
+  window.nextAudioTime = audioContext ? audioContext.currentTime : 0;
+  isPlaying = false;
+  
+  updatePlayIcons(false);
+  if (activeBtnElement) {
+    setButtonState(activeBtnElement, 'idle');
+    activeBtnElement = null;
+  }
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
+}
+
+/**
+ * UI Helpers
+ */
+
+function disableAllButtons(disabled) {
+  const btns = document.querySelectorAll('.tts-section-btn, #play-all-btn');
+  btns.forEach(btn => {
+    if (disabled) {
+        btn.classList.add('disabled');
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.6';
+    } else {
+        btn.classList.remove('disabled');
+        btn.style.pointerEvents = 'auto';
+        btn.style.opacity = '1';
+    }
+  });
+}
+
+function setButtonState(btn, state) {
+  // Reset
+  btn.classList.remove('processing', 'playing');
+  btn.dataset.state = state;
+
+  if (btn.id === 'play-all-btn') {
+      const span = btn.querySelector('span');
+      if (state === 'processing') {
+          if(span) span.textContent = t('nav.generating');
+      } else if (state === 'playing') {
+          if(span) span.textContent = t('nav.playing');
+      } else {
+          if(span) span.textContent = t('nav.play_all_label');
+      }
+  } else {
+      // Section buttons (Icons)
+      // We assume lucide icons are present. 
+      // We can swap the inner SVG or add a class for CSS animation.
+      if (state === 'processing') {
+          btn.innerHTML = '...'; // Simple visual for "busy"
+      } else if (state === 'playing') {
+          // Keep default icon but add active class
+          if(window.lucide) {
+              btn.innerHTML = '<i data-lucide="volume-2"></i>';
+              window.lucide.createIcons();
+          }
+          btn.classList.add('active');
+      } else {
+          // Reset
+          if(window.lucide) {
+              btn.innerHTML = '<i data-lucide="volume-2"></i>';
+              window.lucide.createIcons();
+          }
+      }
   }
 }
 
 function setupUIHandlers() {
   document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.tts-section-btn');
-    if (btn) {
-      const targetId = btn.getAttribute('data-target');
+    const sectionBtn = e.target.closest('.tts-section-btn');
+    if (sectionBtn) {
+      if (sectionBtn.dataset.state === 'playing') {
+          stopAudio();
+          return;
+      }
+      const targetId = sectionBtn.getAttribute('data-target');
       const el = document.getElementById(targetId);
-      if (el) speakText(el.innerText);
+      if (el) speakText(el.innerText, sectionBtn);
     }
     
     const playAll = e.target.closest('#play-all-btn');
     if (playAll) {
-       // Just reading main content for simplicity
+       if (isPlaying) {
+           stopAudio();
+           return;
+       }
        const main = document.querySelector('.main-content');
-       if (main) speakText(main.innerText);
+       if (main) speakText(main.innerText, playAll);
     }
   });
 }

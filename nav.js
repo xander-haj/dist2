@@ -50,7 +50,7 @@ export function initNavigation() {
 
   const topBar = document.getElementById('top-bar');
   if (topBar) {
-      // Added Speed Selector
+      // Speed Selector added
       const controlsHTML = `
         <select id="lang-select" class="tool-select" style="width: auto; padding: 0.4rem 1.0rem;" title="Select Language">
           <option value="en">English</option>
