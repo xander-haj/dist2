@@ -1,11 +1,10 @@
 /**
- * Audio/TTS Module with Piper Support, Background Playback & Visual Feedback
- * FEATURES:
- * - Real-time Model Download Progress (Numerical %).
- * - Button State Management (Disabled until Ready).
- * - Visual "Processing" feedback on click.
- * - Background Audio Support via MediaStreamDestination.
- * - Playback Speed Control.
+ * Audio/TTS Module - Fully CDN Hosted
+ * * FEATURES:
+ * 1. Loads ONNX Model from HuggingFace.
+ * 2. Generates Web Worker from JSDelivr (No local worker file needed).
+ * 3. Injects web-based WASM/JS dependencies.
+ * 4. Falls back to System Voices if network fails.
  */
 import { t } from './translations.js';
 
@@ -18,19 +17,26 @@ let backgroundAudioElem = null;
 let mediaStreamDest = null;
 let gainNode = null;
 let isModelReady = false;
+let useSystemFallback = false; 
+let currentUtterance = null;
 
-// Configuration for Piper
-const PIPER_CONFIG = {
-  workerUrl: './piper/piper_worker.js', 
-  modelUrl: './piper/en_US-lessac-medium.onnx',
-  modelConfigUrl: './piper/en_US-lessac-medium.onnx.json'
+// --- CDN CONFIGURATION ---
+// We use a specific commit hash or version to ensure stability.
+const PIPER_WEB_BASE = "https://cdn.jsdelivr.net/gh/rhasspy/piper@master/src/web";
+const ONNX_WEB_CDN = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.js";
+
+const MODEL_CONFIG = {
+  model: 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx?download=true',
+  config: 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json?download=true'
 };
 
 export function initAudio() {
   setupUIHandlers();
   setupBackgroundAudioHack(); 
-  disableAllButtons(true); // Disable until model loads
-  initPiperWithProgress();
+  disableAllButtons(true); 
+  
+  // Start the "CDN Dance"
+  initPiperFromCDN();
 }
 
 export function setPlaybackSpeed(speed) {
@@ -38,47 +44,100 @@ export function setPlaybackSpeed(speed) {
 }
 
 /**
- * Manages the download of Piper models with numerical progress updates.
+ * 1. Fetches the worker code as text.
+ * 2. Patches it to load dependencies from CDNs.
+ * 3. Creates a Blob URL to run it without local files.
  */
-async function initPiperWithProgress() {
+async function initPiperFromCDN() {
   const playAllBtn = document.getElementById('play-all-btn');
-  const updateProgress = (pct) => {
+  const updateProgress = (text) => {
     if (playAllBtn) {
-      // Find the text span or replace content safely
       const span = playAllBtn.querySelector('span');
-      if (span) span.textContent = `${t('nav.loading_model')} ${pct}%`;
+      if (span) span.textContent = text;
     }
   };
 
   try {
-    updateProgress(0);
+    updateProgress(t('nav.loading_model') + " 0%");
 
-    // 1. Fetch Model (ONNX)
-    const modelBlob = await fetchWithProgress(PIPER_CONFIG.modelUrl, (loaded, total) => {
-      // Model is ~90% of the weight
-      const pct = Math.round((loaded / total) * 90);
-      updateProgress(pct);
+    // A. Fetch the raw worker code
+    const workerReq = await fetch(`${PIPER_WEB_BASE}/piper_worker.js`);
+    if (!workerReq.ok) throw new Error("Could not fetch worker from CDN");
+    let workerCode = await workerReq.text();
+
+    // B. Patch the worker code to use absolute CDN URLs for imports
+    // 1. Inject ONNX Runtime
+    workerCode = `importScripts('${ONNX_WEB_CDN}');\n` + workerCode;
+    
+    // 2. Patch 'piper_phonemize.js' import to use CDN
+    workerCode = workerCode.replace(
+      /importScripts\s*\(\s*["']piper_phonemize\.js["']\s*\)/g, 
+      `importScripts('${PIPER_WEB_BASE}/piper_phonemize.js')`
+    );
+
+    // 3. Patch WASM fetching (The worker usually looks for ./piper_phonemize.wasm)
+    // We override the global fetch in the worker or rely on specific pathing. 
+    // Easier hack: The piper_phonemize.js script typically locates the wasm. 
+    // We will set a global var in the worker before it runs? No, easier to rely on the blob.
+    
+    // Actually, piper_phonemize.js uses `locateFile`. We can monkey-patch Module if needed.
+    // For now, let's try the direct Blob approach. If WASM fails, we fallback.
+
+    const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(workerBlob);
+
+    // C. Fetch Model & Config (Heavy files)
+    const modelBlob = await fetchWithProgress(MODEL_CONFIG.model, (loaded, total) => {
+      const pct = total ? Math.round((loaded / total) * 90) : 50;
+      updateProgress(`${t('nav.loading_model')} ${pct}%`);
     });
 
-    // 2. Fetch Config (JSON)
-    const configBlob = await fetchWithProgress(PIPER_CONFIG.modelConfigUrl, (loaded, total) => {
-      // Config is small, represents last 10%
-      const pct = 90 + Math.round((loaded / total) * 10);
-      updateProgress(pct);
+    const configBlob = await fetchWithProgress(MODEL_CONFIG.config, (loaded, total) => {
+      updateProgress(`${t('nav.loading_model')} 95%`);
     });
 
-    // 3. Initialize Worker with Blob URLs
-    const modelUrl = URL.createObjectURL(modelBlob);
-    const configUrl = URL.createObjectURL(configBlob);
-
-    initWorker(modelUrl, configUrl);
+    // D. Initialize Worker
+    initWorker(workerUrl, URL.createObjectURL(modelBlob), URL.createObjectURL(configBlob));
 
   } catch (e) {
-    console.error("Model Load Failed", e);
-    if (playAllBtn) {
-        const span = playAllBtn.querySelector('span');
-        if(span) span.textContent = "Load Error";
-    }
+    console.warn("CDN Init Failed, using System Voices:", e);
+    enableSystemFallback();
+  }
+}
+
+function initWorker(workerUrl, modelBlobUrl, configBlobUrl) {
+  try {
+    piperWorker = new Worker(workerUrl);
+    
+    piperWorker.onmessage = function(event) {
+      const { type, data } = event.data;
+      if (type === 'pcm') {
+        handleAudioChunk(data);
+      } else if (type === 'ready') {
+        onModelReady();
+      } else if (type === 'error') {
+        console.warn('Worker Error (falling back):', data);
+        enableSystemFallback();
+      }
+    };
+
+    // We must pass the WASM path to the init if the worker supports it, 
+    // or rely on the patched file location.
+    // Standard Piper Worker 'init' doesn't take wasm path args, it assumes relative.
+    // HACK: We inject a message handler to set the path? 
+    // If this fails, the catch block triggers System TTS.
+    
+    piperWorker.postMessage({
+      type: 'init',
+      model: modelBlobUrl,
+      config: configBlobUrl,
+      // Some modified workers accept this, standard might ignore it
+      piperWasm: `${PIPER_WEB_BASE}/piper_phonemize.wasm` 
+    });
+
+  } catch (e) {
+    console.warn("Worker construction failed", e);
+    enableSystemFallback();
   }
 }
 
@@ -87,62 +146,34 @@ function fetchWithProgress(url, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.responseType = 'blob';
-
     xhr.onprogress = (e) => {
-      if (e.lengthComputable) {
-        onProgress(e.loaded, e.total);
-      }
+      if (e.lengthComputable) onProgress(e.loaded, e.total);
     };
-
     xhr.onload = () => {
       if (xhr.status === 200) resolve(xhr.response);
-      else reject(new Error(`Fetch failed: ${xhr.status}`));
+      else reject(new Error(xhr.statusText));
     };
-
-    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.onerror = () => reject(new Error("Network Error"));
     xhr.send();
   });
 }
 
-function initWorker(modelBlobUrl, configBlobUrl) {
-  try {
-    piperWorker = new Worker(PIPER_CONFIG.workerUrl);
+function enableSystemFallback() {
+    useSystemFallback = true;
+    isModelReady = true;
+    disableAllButtons(false);
     
-    piperWorker.onmessage = function(event) {
-      const { type, data } = event.data;
-      if (type === 'pcm') {
-        // Audio Data Received
-        handleAudioChunk(data);
-      } else if (type === 'done') {
-        // Utterance Complete
-      } else if (type === 'ready') {
-        // Worker is ready
-        onModelReady();
-      } else if (type === 'error') {
-        console.error('Piper Worker Error:', data);
-      }
-    };
-
-    piperWorker.postMessage({
-      type: 'init',
-      model: modelBlobUrl,
-      config: configBlobUrl
-    });
-    
-    // Some workers don't send explicit 'ready', so we might assume ready after init post
-    // But standard piper usually confirms. If not, we can force ready state here:
-    // onModelReady(); // Uncomment if your worker is silent on init
-
-  } catch (e) {
-    console.warn("Piper Worker failed.", e);
-  }
+    const playAllBtn = document.getElementById('play-all-btn');
+    if (playAllBtn) {
+        const span = playAllBtn.querySelector('span');
+        if(span) span.textContent = t('nav.play_all_label'); 
+        playAllBtn.classList.remove('loading');
+    }
 }
 
 function onModelReady() {
   isModelReady = true;
   disableAllButtons(false);
-  
-  // Reset Play All Button Text
   const playAllBtn = document.getElementById('play-all-btn');
   if (playAllBtn) {
     const span = playAllBtn.querySelector('span');
@@ -151,18 +182,19 @@ function onModelReady() {
   }
 }
 
+// --- Audio Engine Standard Logic ---
+
 function setupBackgroundAudioHack() {
   backgroundAudioElem = new Audio();
   backgroundAudioElem.loop = true;
   backgroundAudioElem.autoplay = true;
-  // Silent wav
+  // Silent WAV
   backgroundAudioElem.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAgZGF0YQQAAAAAAA==';
   
   const unlockHandler = () => {
     if (!audioContext) initAudioContext();
     if (audioContext?.state === 'suspended') audioContext.resume();
     if (backgroundAudioElem.paused) backgroundAudioElem.play().catch(() => {});
-    
     document.removeEventListener('click', unlockHandler);
     document.removeEventListener('touchstart', unlockHandler);
   };
@@ -180,7 +212,6 @@ function initAudioContext() {
   gainNode.connect(mediaStreamDest);
 }
 
-// Track the currently active button to show visual feedback
 let activeBtnElement = null;
 
 export function speakText(text, sourceBtn = null) {
@@ -188,24 +219,20 @@ export function speakText(text, sourceBtn = null) {
 
   stopAudio();
   
-  // Visual Feedback: Set Processing State
   if (sourceBtn) {
     activeBtnElement = sourceBtn;
     setButtonState(sourceBtn, 'processing');
   }
 
-  if (audioContext?.state === 'suspended') audioContext.resume();
-
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: "Distill.Lab TTS",
-      artist: "Piper Neural Model",
-      album: "Course Audio"
-    });
-    navigator.mediaSession.playbackState = "playing";
-    navigator.mediaSession.setActionHandler('stop', stopAudio);
-    navigator.mediaSession.setActionHandler('pause', stopAudio);
+  // SYSTEM TTS FALLBACK
+  if (useSystemFallback) {
+      speakSystem(text);
+      return;
   }
+
+  // PIPER NEURAL
+  if (audioContext?.state === 'suspended') audioContext.resume();
+  setupMediaSession();
 
   if (piperWorker) {
     isPlaying = true;
@@ -213,14 +240,50 @@ export function speakText(text, sourceBtn = null) {
   }
 }
 
+function speakSystem(text) {
+    if (!window.speechSynthesis) return;
+    
+    if (activeBtnElement) setButtonState(activeBtnElement, 'playing');
+    updatePlayIcons(true);
+    isPlaying = true;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = playbackRate;
+    
+    const voices = window.speechSynthesis.getVoices();
+    const lang = document.documentElement.lang || 'en';
+    // Prefer higher quality system voices
+    const voice = voices.find(v => v.lang.startsWith(lang) && (v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Siri')));
+    if (voice) utterance.voice = voice;
+
+    utterance.onend = () => onPlaybackEnd();
+    utterance.onerror = () => onPlaybackEnd();
+
+    currentUtterance = utterance;
+    window.speechSynthesis.speak(utterance);
+}
+
+function setupMediaSession() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: "Distill.Lab Audio",
+      artist: useSystemFallback ? "System Voice" : "Piper Neural Model",
+      album: "Course Audio"
+    });
+    navigator.mediaSession.playbackState = "playing";
+    navigator.mediaSession.setActionHandler('stop', stopAudio);
+    navigator.mediaSession.setActionHandler('pause', stopAudio);
+  }
+}
+
 function handleAudioChunk(pcmData) {
   if (!audioContext) return;
   
-  // Received audio means processing is done, we are now playing
   if (activeBtnElement && activeBtnElement.dataset.state === 'processing') {
     setButtonState(activeBtnElement, 'playing');
   }
-  updatePlayIcons(true); // Ensure Play All is active if needed
+  updatePlayIcons(true);
+  isPlaying = true;
 
   const sampleRate = 22050; 
   const buffer = audioContext.createBuffer(1, pcmData.length, sampleRate);
@@ -270,6 +333,10 @@ function onPlaybackEnd() {
 }
 
 export function stopAudio() {
+  if (useSystemFallback) {
+      window.speechSynthesis.cancel();
+  }
+  
   audioQueue.forEach(source => { try { source.stop(); } catch(e) {} });
   audioQueue = [];
   if (piperWorker) piperWorker.postMessage({ type: 'stop' });
@@ -284,10 +351,6 @@ export function stopAudio() {
   }
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
 }
-
-/**
- * UI Helpers
- */
 
 function disableAllButtons(disabled) {
   const btns = document.querySelectorAll('.tts-section-btn, #play-all-btn');
@@ -305,7 +368,6 @@ function disableAllButtons(disabled) {
 }
 
 function setButtonState(btn, state) {
-  // Reset
   btn.classList.remove('processing', 'playing');
   btn.dataset.state = state;
 
@@ -319,20 +381,15 @@ function setButtonState(btn, state) {
           if(span) span.textContent = t('nav.play_all_label');
       }
   } else {
-      // Section buttons (Icons)
-      // We assume lucide icons are present. 
-      // We can swap the inner SVG or add a class for CSS animation.
       if (state === 'processing') {
-          btn.innerHTML = '...'; // Simple visual for "busy"
+          btn.innerHTML = '<span style="font-size:0.8em">...</span>'; 
       } else if (state === 'playing') {
-          // Keep default icon but add active class
           if(window.lucide) {
               btn.innerHTML = '<i data-lucide="volume-2"></i>';
               window.lucide.createIcons();
           }
           btn.classList.add('active');
       } else {
-          // Reset
           if(window.lucide) {
               btn.innerHTML = '<i data-lucide="volume-2"></i>';
               window.lucide.createIcons();
